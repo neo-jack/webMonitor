@@ -40,4 +40,4 @@
 
 - package.json 主入口导出 sdk.js，可 npm pack 后独立安装；不将服务端或数据库打入 SDK 包。compose.yaml 与 .env.example 提供独立部署，不依赖主页网络。
 
-- GitHub 远程为 `neo-jack/webMonitor`，私有仓库、master 主分支；主分支以独立项目初始提交重建，旧历史保存在本机归档。上传默认仅 CI，部署需仓库变量 DEPLOY_ENABLED=true。
+- GitHub 远程为 `neo-jack/webMonitor`，公开仓库、master 主分支；主分支以独立项目初始提交重建，旧历史保存在本机归档。上传默认仅 CI，部署需仓库变量 DEPLOY_ENABLED=true。
