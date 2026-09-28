@@ -1,0 +1,108 @@
+name: Monitor CI/CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monitor-server-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+        working-directory: .
+      - run: npm test
+        working-directory: .
+      - run: |
+          bash -n .github/deploy/monitor.sh
+          node --test .github/deploy/monitor.test.mjs
+      - run: npm run build
+        working-directory: .
+      - name: Verify restricted image and prefixed routes
+        run: |
+          docker build -t monitor-check .
+          trap 'docker rm -f monitor-check; docker volume rm monitor-check-data' EXIT
+          docker run -d --name monitor-check --read-only --cap-drop ALL \
+            --security-opt no-new-privileges:true --memory 192m --memory-swap 192m \
+            -v monitor-check-data:/app/data monitor-check
+          for attempt in $(seq 1 20); do
+            if docker exec monitor-check node -e "fetch('http://127.0.0.1:4318/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then break; fi
+            sleep 1
+          done
+          docker exec monitor-check node --input-type=module -e '
+          const base="http://127.0.0.1:4318/3D/monitor/";
+          for(const p of ["","app.js","style.css","monitor.js","demo.html"]) if(!(await fetch(base+p)).ok) process.exit(1);
+          if(!(await fetch(base+"api/events")).ok) process.exit(1);'
+      - name: Verify actual Nginx subpath and failure isolation
+        run: node --test .github/deploy/monitor.integration.test.mjs
+      - uses: actions/upload-artifact@v6
+        with:
+          name: monitor-dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    needs: check
+    if: vars.DEPLOY_ENABLED == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check server configuration
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+        run: |
+          for name in SERVER_HOST SERVER_USER SERVER_PASSWORD; do
+            test -n "${!name}" || { echo "::error::Missing secret: $name"; exit 1; }
+          done
+      - uses: actions/download-artifact@v7
+        with:
+          name: monitor-dist
+          path: dist
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish monitor
+        id: image
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/my-page-monitor"
+          docker build -t "$image:$GITHUB_SHA" -t "$image:latest" .
+          docker push "$image:$GITHUB_SHA"
+          docker push "$image:latest"
+          echo "ref=$image:$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - name: Deploy monitor with rollback
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MONITOR_IMAGE: ${{ steps.image.outputs.ref }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: '22'
+          timeout: 30s
+          command_timeout: 15m
+          envs: GHCR_USER,GHCR_TOKEN,MONITOR_IMAGE
+          script_path: .github/deploy/monitor.sh

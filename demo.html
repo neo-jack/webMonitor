@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>采集测试</title><link rel="icon" type="image/svg+xml" href="./favicon.svg"><link rel="stylesheet" href="./style.css"></head>
+<body><div class="sandbox"><header><a href="./">← 监控</a><h1>采集测试</h1></header>
+<div class="setup-actions">
+<button class="secondary" id="js-error" data-monitor="demo:js-error">JS 异常</button>
+<button class="secondary" id="rejection" data-monitor="demo:rejection">Promise 拒绝</button>
+<button class="secondary" id="network" data-monitor="demo:fetch">Fetch 失败</button>
+<button class="secondary" id="xhr" data-monitor="demo:xhr">XHR 失败</button>
+<button class="secondary" id="resource" data-monitor="demo:resource">资源失败</button>
+<button class="secondary" id="route" data-monitor="demo:route">路由切换</button>
+<button class="secondary" id="custom" data-monitor="demo:custom">自定义事件</button>
+<button class="primary" id="flush" data-monitor="demo:flush">立即上报</button>
+</div><pre id="log" role="status">sdk-playground / development</pre></div>
+<script src="./monitor.js"></script><script>
+const base = new URL('./', location.href);
+const monitor = PageMonitor.init({ project: 'sdk-playground', environment: 'development', release: '0.2.0', endpoint: new URL('api/ingest', base).href });
+const log = message => document.getElementById('log').textContent = new Date().toLocaleTimeString() + ' · ' + message;
+document.getElementById('js-error').onclick = () => { log('JS 异常'); setTimeout(() => { throw new Error('Demo: 3D scene failed to initialize'); }); };
+document.getElementById('rejection').onclick = () => { log('Promise 拒绝'); Promise.reject(new Error('Demo: texture loading rejected')); };
+document.getElementById('network').onclick = async () => { const response = await fetch(new URL('api/demo/failure?token=example-secret', base)); log('Fetch ' + response.status); };
+document.getElementById('xhr').onclick = () => { const xhr = new XMLHttpRequest(); xhr.open('GET', new URL('api/demo/failure', base)); xhr.onloadend = () => log('XHR ' + xhr.status); xhr.send(); };
+document.getElementById('resource').onclick = () => { const image = new Image(); image.hidden = true; document.body.append(image); image.addEventListener('error', () => image.remove(), { once: true }); image.src = new URL('missing-demo-texture.png', base); log('资源加载失败'); };
+document.getElementById('route').onclick = () => { history.pushState({}, '', new URL('demo.html?view=' + Date.now(), base)); log('路由已切换'); };
+document.getElementById('custom').onclick = () => { monitor.track('scene:ready', 120); log('scene:ready'); };
+document.getElementById('flush').onclick = async () => { await monitor.flush(); log('已尝试上报'); };
+</script></body></html>

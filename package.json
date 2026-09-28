@@ -1,0 +1,27 @@
+{
+  "name": "@my-page/monitor-sdk",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "node --watch server.mjs",
+    "start": "node server.mjs",
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "web-vitals": "^5.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "files": [
+    "sdk.js"
+  ],
+  "exports": {
+    ".": "./sdk.js"
+  }
+}

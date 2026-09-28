@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark"><title>Monitor</title>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg"><link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="workspace-title" href="./">监控</a>
+  <nav aria-label="监控导航">
+    <button class="nav-item active" data-page="overview">概览</button>
+    <button class="nav-item" data-page="errors">异常<span id="error-count" class="nav-count">0</span></button>
+    <button class="nav-item" data-page="performance">性能</button>
+    <button class="nav-item" data-page="network">请求</button>
+    <button class="nav-item" data-page="sessions">会话</button>
+    <button class="nav-item" data-page="setup">接入</button>
+  </nav>
+</aside>
+<main>
+  <header>
+    <h1 id="page-title">概览</h1>
+    <div class="filters">
+      <select id="project" aria-label="应用"><option value="">全部应用</option></select>
+      <select id="environment" aria-label="环境"><option value="">全部环境</option></select>
+      <select id="hours" aria-label="时间范围"><option value="1">1 小时</option><option value="24" selected>24 小时</option><option value="168">7 天</option><option value="720">30 天</option></select>
+    </div>
+    <div class="actions">
+      <span id="connection" class="connection" title="正在连接" role="status" aria-label="正在连接"></span>
+      <button id="refresh" class="icon-button" title="刷新" aria-label="刷新">↻</button>
+    </div>
+  </header>
+  <div class="content"><div id="notice" role="status" hidden></div><section id="view" aria-live="polite"></section></div>
+</main>
+<dialog id="detail">
+  <div class="dialog-heading"><span>详情</span><button class="icon-button" id="close-detail" aria-label="关闭">×</button></div>
+  <div id="detail-content"></div>
+</dialog>
+<script type="module" src="./app.js"></script>
+</body></html>

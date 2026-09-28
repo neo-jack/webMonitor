@@ -1,0 +1,15 @@
+services:
+  monitor:
+    build: .
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 4318
+    ports: ["127.0.0.1:4318:4318"]
+    volumes: ["monitor-data:/app/data"]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+volumes:
+  monitor-data:
