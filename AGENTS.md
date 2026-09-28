@@ -14,7 +14,8 @@
 - `build.mjs` — 构建 IIFE SDK 并将界面复制到 `dist/`。
 - `test/server.test.mjs` — 接收、脱敏、授权、校验、持久化集成测试。
 - `test/chart.test.mjs` — 趋势图时间范围、分组粒度、日期标签与范围外事件回归测试。
-- `README.md`、`RESEARCH.md` — 运行、接入、边界和开源参考结论。
+- `README.md` — GitHub 项目入口，沿用 miniReact 的简洁结构：项目简介、在线体验、快速开始、构建与验证；标题使用 GitHub 仓库名，只保留必要接入配置，不混入本机目录编号、迁移记录或提交历史说明。
+- `RESEARCH.md` — 开源参考与调研结论。
 - `Dockerfile`、`.dockerignore` — 只打包服务与构建产物，内置 SQLite 不安装运行时依赖，非 root 运行。
 - `.github/workflows/monitor-cicd.yml`、`.github/deploy/monitor.sh` — 独立自动部署，配置与回滚边界见上层部署说明。
 
